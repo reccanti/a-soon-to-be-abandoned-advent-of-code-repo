@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -59,12 +60,62 @@ func main() {
 	// and iterating values on both ends
 	//
 	// ~reccanti 12/2/2020
-	for i, val1 := range inputs {
-		remaining := inputs[i+1:]
-		for _, val2 := range remaining {
-			if val1+val2 == 2020 {
-				fmt.Println(val1 * val2)
-			}
+	// for i, val1 := range inputs {
+	// 	remaining := inputs[i+1:]
+	// 	for _, val2 := range remaining {
+	// 		if val1+val2 == 2020 {
+	// 			fmt.Println(val1 * val2)
+	// 		}
+	// 	}
+	// }
+
+	/**
+	 * @NOTE Here we sort our inputs and iterate from both the
+	 * beginning and end of the array, i.e. a "low-value" and a
+	 * "high-value" index.
+	 *
+	 * If the sum of those values is less than our "target" value,
+	 * we need to increment our "low-value" index to the next higher
+	 * value.
+	 *
+	 * If the sum of those values is greater than our "target" value,
+	 * we need to decrement our "high-value" index to the next lower
+	 * value.
+	 *
+	 * If our indexes are ever the same, there are no possible
+	 * combination of values that will work.
+	 *
+	 * ~bwilcox 12/2/2020
+	 */
+	sort.Ints(inputs)
+	i := 0
+	j := len(inputs) - 1
+	for {
+		// if our indexes converge, we'll never produce a value of
+		// 2020, so we should exit out
+		if i == j {
+			fmt.Println("No combination of values adds up to 2020")
+			break
+		}
+
+		// get the sum of our current "low" and "high" values
+		val1 := inputs[i]
+		val2 := inputs[j]
+		sum := val1 + val2
+
+		// if the sum is less than 2020, increment our "low" index
+		if sum < 2020 {
+			i += 1
+		}
+		// if the sum is greater than 2020, decrement our "high" index
+		if sum > 2020 {
+			j -= 1
+		}
+		// if our sum equals 2020, print the product and exit
+		if sum == 2020 {
+			fmt.Println(val1 * val2)
+			break
 		}
 	}
+
 }
