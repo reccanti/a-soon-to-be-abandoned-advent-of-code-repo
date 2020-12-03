@@ -1,11 +1,11 @@
-# Advent of Code Day 2
+# Advent of Code Day 3
 
 ## First Problem
 
 Get the answer to the first problem by running this command:
 
 ```bash
-go run 01/02-1.go ./relative/path/to/file.txt
+go run 01/03-1.go ./relative/path/to/file.txt
 ```
 
 ## Second Problem
@@ -13,5 +13,5 @@ go run 01/02-1.go ./relative/path/to/file.txt
 Get the answer to the first problem by running this command:
 
 ```bash
-go run 02/02-2.go ./relative/path/to/file.txt
+go run 02/03-2.go ./relative/path/to/file.txt
 ```
