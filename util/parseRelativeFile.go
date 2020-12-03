@@ -1,4 +1,4 @@
-package utils
+package util
 
 import (
 	"io/ioutil"
@@ -6,7 +6,7 @@ import (
 	"path"
 )
 
-func parseRelativeFile(filename string) (*string, error) {
+func ParseRelativeFile(filename string) (*string, error) {
 	// 1. get the file name
 	wd, err := os.Getwd()
 	if err != nil {
