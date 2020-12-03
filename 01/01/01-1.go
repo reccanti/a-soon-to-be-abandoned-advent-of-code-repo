@@ -54,21 +54,6 @@ func main() {
 		fmt.Println(err)
 	}
 
-	// This is probably inefficient because it
-	// runs in O(n^2) time. We might be able to
-	// improve this by sorting the list first
-	// and iterating values on both ends
-	//
-	// ~reccanti 12/2/2020
-	// for i, val1 := range inputs {
-	// 	remaining := inputs[i+1:]
-	// 	for _, val2 := range remaining {
-	// 		if val1+val2 == 2020 {
-	// 			fmt.Println(val1 * val2)
-	// 		}
-	// 	}
-	// }
-
 	/**
 	 * @NOTE Here we sort our inputs and iterate from both the
 	 * beginning and end of the array, i.e. a "low-value" and a
