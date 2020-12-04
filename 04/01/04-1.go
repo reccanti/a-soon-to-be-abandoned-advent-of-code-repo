@@ -9,10 +9,6 @@ import (
 	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/util"
 )
 
-// ([^\s]*)\s?
-
-type Passport = map[string]string
-
 func main() {
 	// get the "hill" data
 	filename := os.Args[1]
