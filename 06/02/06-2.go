@@ -14,7 +14,7 @@ func toBinary(answer string) int64 {
 	// answers. (i.e. for if you 5 questions: "a", "b", "c", "d", and "e"
 	// and you answer "yes" to "a" and "d", your binary number would
 	// be '10010')
-	bin := []rune(strings.Repeat("0", 26))
+	bin := 0b00000000000000000000000000
 	for _, char := range strings.ToLower(answer) {
 		// the lower-case ASCII letters begin at 97, so we
 		// need to shift our characters down by 97 to get the
@@ -22,11 +22,9 @@ func toBinary(answer string) int64 {
 		//
 		// http://www.asciitable.com/
 		index := char - 97
-		bin[index] = '1'
+		bin += 1 << index
 	}
-
-	ans, _ := strconv.ParseInt(string(bin), 2, 64)
-	return ans
+	return int64(bin)
 }
 
 func main() {
@@ -56,8 +54,7 @@ func main() {
 	// them using the 'bitwise AND' operation
 	commonAnswerCount := 0
 	for _, groupAnswers := range allAnswersBin {
-		// this creates a series of 26 "1"s in binary
-		commonAnswers, _ := strconv.ParseInt(string([]rune(strings.Repeat("1", 26))), 2, 64)
+		commonAnswers := int64(0b11111111111111111111111111)
 		// iterate through the list, applying a series of
 		// "bitwise AND"s
 		for _, answers := range groupAnswers {
