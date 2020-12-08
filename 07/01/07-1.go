@@ -71,7 +71,6 @@ func main() {
 		}
 		containerBags[container] = containing
 	}
-	// fmt.Println(containerBags)
 
 	/**
 	 * STEP 2: Create a second map that inverts this, showing which
@@ -88,7 +87,6 @@ func main() {
 			containingBags[bag] = append(containedBy, bagType)
 		}
 	}
-	// fmt.Println(containingBags)
 
 	/**
 	 * STEP 3: Using these 2 maps, determine which bags can contain

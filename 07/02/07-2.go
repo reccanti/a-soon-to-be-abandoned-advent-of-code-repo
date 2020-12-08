@@ -1,101 +1,93 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"sort"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/util"
 )
 
-type SeatLocation struct {
-	row    int
-	column int
+type BagContainsMap = map[string]map[string]int
+
+// ^(\w+ \w+) bags contain (.*)$
+// ^(\d+) (\w+ \w+) bags\W?$
+
+func parseBagString(bag string) (string, map[string]int, error) {
+	// initial parse. Get the type of the "containing" bag,
+	containerExp := regexp.MustCompile(`^(\w+ \w+) bags contain (.*)$`)
+	res := containerExp.FindStringSubmatch(bag)
+	if len(res) != 3 {
+		return "", nil, errors.New("unable to find 'containing' bag in bag string")
+	}
+	container := res[1]
+	containedStringBlock := res[2]
+
+	// second parse, for each comma-separated "contained" string,
+	// extract the quantity and type of each bag
+	containedStrings := strings.Split(containedStringBlock, ",")
+	containedExp := regexp.MustCompile(`^\W*(\d+) (\w+ \w+) bags?\W?$`)
+	contained := map[string]int{}
+	for _, str := range containedStrings {
+		res := containedExp.FindStringSubmatch(str)
+		if len(res) != 3 {
+			break
+		}
+		bagType := res[2]
+		quantity, err := strconv.Atoi(res[1])
+		if err != nil {
+			break
+		}
+		contained[bagType] = quantity
+	}
+
+	// return the parsed values
+	return container, contained, nil
 }
 
-/**
- * @NOTE this function assumes that str will be 10 characters
- * long, where the first 7 are used to determine one of the 128
- * rows, and the last 3 are used to determine one of the 8 columns.
- * If it turns out that we need to change this to support an arbitrary
- * number of rows and columns, we should change how we calculate the
- * "pivot" point, where we split the row and column data
- *
- * ~reccanti 12/5/2020
- */
-func getSeatLocation(seatStr string) SeatLocation {
-
-	// calculate the row
-	rowChars := seatStr[:7]
-	maxRow := 127
-	minRow := 0
-	for _, char := range rowChars {
-		change := (maxRow - minRow + 1) / 2
-		if string(char) == "F" {
-			maxRow -= change
-		} else if string(char) == "B" {
-			minRow += change
-		}
+func countBags(currentBag string, bagMap BagContainsMap) int {
+	bags, containsBags := bagMap[currentBag]
+	if !containsBags {
+		fmt.Println(fmt.Errorf("'%s' bag not found", currentBag))
+		return 1
 	}
-
-	// calculate the column
-	columnChars := seatStr[7:]
-	maxColumn := 7
-	minColumn := 0
-	for _, char := range columnChars {
-		change := (maxColumn - minColumn + 1) / 2
-		if string(char) == "L" {
-			maxColumn -= change
-		} else if string(char) == "R" {
-			minColumn += change
-		}
+	totalBags := 0
+	for bag, quantity := range bags {
+		totalBags += quantity * (countBags(bag, bagMap) + 1)
 	}
-
-	return SeatLocation{
-		row:    maxRow,
-		column: maxColumn,
-	}
-}
-
-/**
- * @NOTE Again, this function assumes that there will
- * be 8 columns, so this might need to be expanded in
- * the future
- *
- * ~reccanti 12/5/2020
- */
-func getSeatID(seat SeatLocation) int {
-	return seat.row*8 + seat.column
+	return totalBags
 }
 
 func main() {
-	// get the "seat" data
 	filename := os.Args[1]
 	input, err := util.ParseRelativeFile(filename)
 	if err != nil {
 		return
 	}
-	seatData := *input
-	seats := strings.Split(seatData, "\n")
+	bagText := *input
+	bagStrings := strings.Split(bagText, "\n")
 
-	// convert our seats list into an array of seat IDs
-	seatIDs := []int{}
-	for _, seat := range seats {
-		loc := getSeatLocation(seat)
-		id := getSeatID(loc)
-		seatIDs = append(seatIDs, id)
-	}
-	sort.Ints(seatIDs)
-
-	// search for a gap in our list
-	prev := seatIDs[0]
-	for _, cur := range seatIDs[1:] {
-		if cur-prev > 1 {
-			fmt.Println(cur - 1)
+	/**
+	 * STEP 1: Create a map of the types and quantity of bags that
+	 * each bag contains
+	 */
+	containerBags := make(BagContainsMap)
+	for _, str := range bagStrings {
+		container, containing, err := parseBagString(str)
+		if err != nil {
+			fmt.Println(fmt.Errorf("Error parsing the string %s", str))
 			return
 		}
-		prev = cur
+		containerBags[container] = containing
 	}
 
+	/**
+	 * STEP 2: Recursively determine the total number of bags that
+	 * "shiny gold" bag can contain
+	 */
+	count := countBags("shiny gold", containerBags)
+	fmt.Println(count)
 }

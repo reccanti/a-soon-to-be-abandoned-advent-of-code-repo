@@ -11,7 +11,7 @@ go run 01/07-1.go ./relative/path/to/file.txt
 to run tests, run this command
 
 ```bash
-go test 02/07-1.go 02/07-1_test.go
+go test 01/07-1.go 01/07-1_test.go
 ```
 
 ## Second Problem

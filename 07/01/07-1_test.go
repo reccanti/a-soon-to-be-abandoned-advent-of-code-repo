@@ -1,31 +1,6 @@
-// package main
-
-// import (
-// 	"testing"
-// )
-
-// func TestGetSeatLocation(t *testing.T) {
-// 	loc := getSeatLocation("FBFBBFFRLR")
-// 	if loc.row != 44 {
-// 		t.Errorf("row calculated incorrectly")
-// 	}
-// 	if loc.column != 5 {
-// 		t.Errorf("column calculated incorrectly")
-// 	}
-// }
-
-// func TestGetSeatID(t *testing.T) {
-// 	loc := getSeatLocation("FBFBBFFRLR")
-// 	id := getSeatID(loc)
-// 	if id != 357 {
-// 		t.Errorf("id calculated incorrectly")
-// 	}
-// }
-
 package main
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -38,7 +13,6 @@ func TestParseBagString(t *testing.T) {
 	if container != "light red" {
 		t.Errorf("'container' improperly parsed")
 	}
-	fmt.Println(containing)
 	if len(containing) != 2 || containing["bright white"] != 1 || containing["muted yellow"] != 2 {
 		t.Errorf("'containing' map improperly parsed")
 	}
