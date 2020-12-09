@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/08/02/statemachine"
 	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/util"
-	"statemachine/statemachine"
 )
 
 // (.+) ([+-]\d+)
