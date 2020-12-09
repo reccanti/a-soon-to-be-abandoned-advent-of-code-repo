@@ -48,7 +48,7 @@ func main() {
 
 	s := statemachine.New(instructions)
 
-	statemachine.Next(s)
-	fmt.Println(s.ToString())
+	s = s.Next()
+	fmt.Println(s)
 
 }

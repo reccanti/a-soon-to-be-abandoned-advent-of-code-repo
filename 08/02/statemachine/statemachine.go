@@ -10,33 +10,44 @@ type Instruction struct {
 }
 
 type StateMachine struct {
-	index        int
-	acc          int
-	instructions []Instruction
+	Index        int
+	Acc          int
+	Instructions []Instruction
+	Finished     bool
 }
 
 func New(instructions []Instruction) StateMachine {
 	s := StateMachine{
-		index:        0,
-		acc:          0,
-		instructions: instructions,
+		Index:        0,
+		Acc:          0,
+		Instructions: instructions,
 	}
 	return s
 }
 
-func Next(s StateMachine) {
-	ins := s.instructions[s.index]
-	switch ins.Name {
-	case "jmp":
-		s.index += ins.Value
-	case "acc":
-		s.acc += ins.Value
-		s.index += 1
-	default:
-		s.index += 1
+func (s StateMachine) Next() StateMachine {
+	if !s.Finished {
+		ins := s.Instructions[s.Index]
+		switch ins.Name {
+		case "jmp":
+			s.Index += ins.Value
+		case "acc":
+			s.Acc += ins.Value
+			s.Index += 1
+		default:
+			s.Index += 1
+		}
+		if s.Index > len(s.Instructions) {
+			s.Finished = true
+		}
 	}
+	return s
 }
 
-func ToString(s StateMachine) string {
-	return fmt.Sprintf("Current State:\nindex: %d\nacc: %d", s.index, s.acc)
+func (s StateMachine) String() string {
+	finished := "false"
+	if s.Finished {
+		finished = "true"
+	}
+	return fmt.Sprintf("Current State:\nindex: %d\nacc: %d\nfinished: %s", s.Index, s.Acc, finished)
 }
