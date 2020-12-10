@@ -28,59 +28,86 @@ func parseInstructionString(str string) (*statemachine.Instruction, error) {
 }
 
 /**
- * Returns 2 values, the index at which the cycle was detected, and whether
- * or not the state machine finished. If the state machine finished, there is
- * no cycle, so we return an index of -1
+ * A convenient function for "flipping" our "jmp" and "nop" instructions
  */
-func detectCycle(s1 statemachine.StateMachine, s2 statemachine.StateMachine) (int, bool) {
-	// iterate through each of these state machines until they
-	// either finish or reach a common index
-	for {
-		s1 = s1.Next()
-		s2 = s2.Next().Next()
-
-		if s1.Finished {
-			fmt.Println("First state machine finished with acc", s1.Acc)
-			return -1, true
-		}
-		if s2.Finished {
-			fmt.Println("Second state machine finished with acc", s2.Acc)
-			return -1, true
-		}
-		if s1.Index == s2.Index {
-			fmt.Println("Cycle detected at index", s1.Index)
-			return s1.Index, false
-		}
+func flip(i statemachine.Instruction) statemachine.Instruction {
+	switch i.Name {
+	case "jmp":
+		return statemachine.Instruction{Name: "nop", Value: i.Value}
+	case "nop":
+		return statemachine.Instruction{Name: "jmp", Value: i.Value}
+	default:
+		return i
 	}
 }
 
-type InstructionLog struct {
-	lineNumber  int
-	instruction statemachine.Instruction
+type Node struct {
+	state statemachine.StateMachine
+	next  statemachine.Instruction
 }
 
-func getCycleInstructions(s statemachine.StateMachine, cycleIndex int) []InstructionLog {
-	// get to the index at which the cycle occurs
-	for s.Index != cycleIndex {
-		s = s.Next()
+func getNext(s statemachine.StateMachine, in statemachine.Instruction) []Node {
+	if in.Name == "jmp" || in.Name == "nop" {
+		alt := flip(in)
+		n1 := Node{state: s, next: in}
+		n2 := Node{state: s, next: alt}
+		return []Node{n1, n2}
+	} else {
+		n := Node{state: s, next: in}
+		return []Node{n}
+	}
+}
+
+func traverseAndFix(s statemachine.StateMachine, ins []statemachine.Instruction) (*statemachine.StateMachine, error) {
+	// this will keep a record of all the states we've traversed
+	// up until now. If we find a cycle, we'll revert to the previous state
+	// and attempt to "flip" the instruction
+	// toVisit := getNext(s, ins[s.Index])
+	history := []statemachine.StateMachine{}
+
+	// a lookup record for the different code lines we've visited up until
+	// now. This is used to detect cycles
+	visited := map[int]bool{}
+
+	// use this to detect if we've already detected a cycle
+	cycleDetected := false
+
+	// cycle through the list until we pass the last instruction
+	for s.Index < len(ins) {
+		// if we've already visited this node, cycle back through our history
+		// until we find a non-acc instruction. Once we've done that, we flip
+		// the instruction and carry on
+		//
+		// This whole section is SUPER gross but it seems to work!
+		if visited[s.Index] {
+			if len(history) < 3 {
+				return nil, errors.New("Unable to traverse the program without creating a cycle")
+			}
+			cycleDetected = true
+			s = history[0]
+			history = history[1:]
+			for ins[s.Index].Name == "acc" {
+				if len(history) < 3 {
+					return nil, errors.New("Unable to traverse the program without creating a cycle")
+				}
+				s = history[0]
+				history = history[1:]
+			}
+			in := flip(ins[s.Index])
+			s = s.Execute(in)
+		} else {
+			visited[s.Index] = true
+		}
+		// add state to history list
+		if !cycleDetected {
+			// history = util.Prepend(s, history)
+			history = append([]statemachine.StateMachine{s}, history...)
+		}
+		in := ins[s.Index]
+		s = s.Execute(in)
 	}
 
-	// once we get to that state, start logging the instructions
-	initLog := InstructionLog{
-		lineNumber:  s.Index,
-		instruction: s.Instructions[s.Index],
-	}
-	instructions := []InstructionLog{initLog}
-	s = s.Next()
-	for s.Index != cycleIndex {
-		log := InstructionLog{
-			lineNumber:  s.Index,
-			instruction: s.Instructions[s.Index],
-		}
-		instructions = append(instructions, log)
-		s = s.Next()
-	}
-	return instructions
+	return &s, nil
 }
 
 func main() {
@@ -102,25 +129,11 @@ func main() {
 		instructions = append(instructions, *instruction)
 	}
 
-	s1 := statemachine.New(instructions)
-	s2 := statemachine.New(instructions)
-
-	// see if we can detect a cycle
-	index, didFinish := detectCycle(s1, s2)
-	if didFinish {
-		fmt.Println(fmt.Errorf("Did not detect a cycle"))
-		return
+	s := statemachine.New()
+	sp, err := traverseAndFix(s, instructions)
+	if err != nil {
+		fmt.Println(err)
 	}
-
-	// get the instructions in that cycle
-	logs := getCycleInstructions(s1, index)
-	filteredLogs := []InstructionLog{}
-	for _, log := range logs {
-		if log.instruction.Name != "acc" {
-			filteredLogs = append(filteredLogs, log)
-		}
-	}
-
-	fmt.Println(filteredLogs)
-
+	s = *sp
+	fmt.Println(s.Acc)
 }
