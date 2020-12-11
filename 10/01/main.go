@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	// "strconv"
-	// "strings"
 
 	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/util"
 )
@@ -37,7 +35,6 @@ func main() {
 	}
 	final := visited[len(visited)-1] + 3
 	visited = append(visited, final)
-	// fmt.Println(visited)
 
 	// get the number of 1-jolt differences
 	oneJolt := 0
@@ -48,7 +45,6 @@ func main() {
 		}
 		prev = cur
 	}
-	// fmt.Println(oneJolt)
 
 	// get the number of 3-jolt differences
 	threeJolts := 0
@@ -59,17 +55,6 @@ func main() {
 		}
 		prev = cur
 	}
-	// fmt.Println(threeJolts)
 
 	fmt.Println(oneJolt * threeJolts)
-
-	// curJoltage := 0
-	// visited := []int{}
-	// for len(jolts) > 0 {
-	//
-	// }
-
-	// sort all inputs into a "toVisit" list
-	// create an empty "visited" list
-	// iterate through the lists and attempt to
 }
