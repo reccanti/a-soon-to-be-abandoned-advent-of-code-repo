@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strconv"
+	"strings"
 )
 
 func ParseRelativeFile(filename string) (*string, error) {
@@ -23,4 +25,28 @@ func ParseRelativeFile(filename string) (*string, error) {
 
 	// 3. Return that string
 	return &str, nil
+}
+
+func ParseRelativeFileSplit(filename string, separator string) ([]string, error) {
+	input, err := ParseRelativeFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	return strings.Split(*input, separator), nil
+}
+
+func ParseRelativeFileInts(filename string, separator string) ([]int, error) {
+	inputs, err := ParseRelativeFileSplit(filename, separator)
+	if err != nil {
+		return nil, err
+	}
+	nums := []int{}
+	for _, val := range inputs {
+		num, err := strconv.Atoi(val)
+		if err != nil {
+			return nil, err
+		}
+		nums = append(nums, num)
+	}
+	return nums, nil
 }
