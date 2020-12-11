@@ -121,5 +121,4 @@ func main() {
 	largest := values[len(values)-1]
 
 	fmt.Println(smallest + largest)
-
 }
