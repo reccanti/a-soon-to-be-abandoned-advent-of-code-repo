@@ -1,6 +1,16 @@
-# Advent of Code Day 10
+# Advent of Code Day 11
+
+## Grid
+
+To test the Grid, run this command
+
+```bash
+go test grid/grid.go grid/grid_test.go
+```
 
 ## First Problem
+
+![Example of the command being run](./conway_1.gif)
 
 Get the answer to the first problem by running this command:
 
