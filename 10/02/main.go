@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/util"
 )
@@ -43,59 +44,32 @@ func constructGraph(jolts []int) Graph {
 	return graph
 }
 
-func traverseStr(cur int, graph Graph, str string) {
-	// paths := [][]int{}
-
-	pathStr := fmt.Sprintf("%s->%d", str, cur)
-
-	potentials, hasArray := graph[cur]
-	if !hasArray {
-		fmt.Println(pathStr)
-	}
-	for _, potential := range potentials {
-		traverseStr(potential, graph, pathStr)
-	}
-}
-
-func getSuccessfulPaths(graph Graph) [][]int {
-
-	paths := [][]int{}
-	var internalGetSuccessfulPaths func(cur int, path []int, graph Graph)
-	internalGetSuccessfulPaths = func(cur int, path []int, graph Graph) {
-		fmt.Println(cur)
-		path = append(path, cur)
-		potentials, hasArray := graph[cur]
-		if !hasArray {
-			fmt.Println(path)
-			paths = append(paths, path)
-			return
-		}
-		for _, potential := range potentials {
-			internalGetSuccessfulPaths(potential, path, graph)
-		}
-	}
-	internalGetSuccessfulPaths(0, []int{}, graph)
-	return paths
-}
-
 func countSuccessfulPaths(graph Graph) int {
+	orderedKeys := []int{}
+	for key, _ := range graph {
+		orderedKeys = append(orderedKeys, key)
+	}
+	sort.Ints(orderedKeys)
 
-	paths := 0
-	var internalGetSuccessfulPaths func(cur int, graph Graph)
-	internalGetSuccessfulPaths = func(cur int, graph Graph) {
-		// fmt.Println(cur)
-		potentials, hasArray := graph[cur]
-		if !hasArray {
-			paths += 1
-			fmt.Println(paths)
-			return
-		}
-		for _, potential := range potentials {
-			internalGetSuccessfulPaths(potential, graph)
+	// create a compounding number paths. Record the current number
+	// of paths, then add that to the total number of paths for each
+	// potential node. By the time we make it to the end of the list,
+	// we'll have counted all the potential ways we could have reached
+	// this node.
+	pathsPerNode := map[int]int{}
+	pathsPerNode[0] = 1
+	for _, key := range orderedKeys {
+		paths := graph[key]
+		curPaths := pathsPerNode[key]
+		for _, path := range paths {
+			_, hasPath := pathsPerNode[path]
+			if !hasPath {
+				pathsPerNode[path] = 0
+			}
+			pathsPerNode[path] += curPaths
 		}
 	}
-	internalGetSuccessfulPaths(0, graph)
-	return paths
+	return pathsPerNode[orderedKeys[len(orderedKeys)-1]+3]
 }
 
 func main() {
@@ -109,10 +83,8 @@ func main() {
 
 	// create a graph of all the paths we can take
 	graph := constructGraph(jolts)
-	// fmt.Println(graph)
 
 	// begin exhaustively searching our graph
 	count := countSuccessfulPaths(graph)
 	fmt.Println(count)
-	// fmt.Println(len(paths))
 }
