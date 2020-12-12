@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"testing"
-	// "github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/11/grid"
 )
 
 func TestGetNeighborInfo(t *testing.T) {

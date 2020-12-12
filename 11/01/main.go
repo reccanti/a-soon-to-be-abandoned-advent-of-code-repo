@@ -3,12 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
-	// "sort"
-	// "strconv"
-	tm "github.com/buger/goterm"
 	"strings"
 	"time"
 
+	tm "github.com/buger/goterm"
 	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/11/grid"
 	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/util"
 )
@@ -34,64 +32,16 @@ type neighborInfo struct {
 }
 
 func getNeighborInfo(g grid.Grid, row int, column int) neighborInfo {
-	// // start by retrieving all the neighbors of the current cell
-	// neighbors := []interface{}{}
-	// // top left
-	// if g.IsInBounds(row-1, column-1) {
-	// 	cell, _ := g.Get(row-1, column-1)
-	// 	neighbors = append(neighbors, *cell)
-	// }
-	// // top middle
-	// if g.IsInBounds(row-1, column) {
-	// 	cell, _ := g.Get(row-1, column)
-	// 	neighbors = append(neighbors, *cell)
-	// }
-	// // top right
-	// if g.IsInBounds(row-1, column+1) {
-	// 	cell, _ := g.Get(row-1, column+1)
-	// 	neighbors = append(neighbors, *cell)
-	// }
-	// // middle left
-	// if g.IsInBounds(row, column-1) {
-	// 	cell, _ := g.Get(row, column-1)
-	// 	neighbors = append(neighbors, *cell)
-	// }
-	// // we don't factor the "center" tile in our calculations
-	// // middle right
-	// if g.IsInBounds(row, column+1) {
-	// 	cell, _ := g.Get(row, column+1)
-	// 	neighbors = append(neighbors, *cell)
-	// }
-	// // bottom left
-	// if g.IsInBounds(row+1, column-1) {
-	// 	cell, _ := g.Get(row+1, column-1)
-	// 	neighbors = append(neighbors, *cell)
-	// }
-	// // bottom middle
-	// if g.IsInBounds(row+1, column) {
-	// 	cell, _ := g.Get(row+1, column)
-	// 	neighbors = append(neighbors, *cell)
-	// }
-	// // bottom right
-	// if g.IsInBounds(row+1, column+1) {
-	// 	cell, _ := g.Get(row+1, column+1)
-	// 	neighbors = append(neighbors, *cell)
-	// }
 	neighbors := []interface{}{}
 	for r := -1; r <= 1; r++ {
 		for c := -1; c <= 1; c++ {
-			// fmt.Println(row+r, column+c)
 			if r == 0 && c == 0 {
 			} else {
 				if g.IsInBounds(row+r, column+c) {
 					cell, _ := g.Get(row+r, column+c)
-					// fmt.Println(row+r, column+c)
 					neighbors = append(neighbors, *cell)
 				}
 			}
-			// else {
-			// 	neighbors = append(neighbors, "#")
-			// }
 		}
 	}
 
@@ -111,8 +61,6 @@ func getNeighborInfo(g grid.Grid, row int, column int) neighborInfo {
 			info.numFloor += 1
 		}
 	}
-	// fmt.Println(neighbors)
-	// fmt.Println(info)
 	return info
 }
 
@@ -190,19 +138,6 @@ func main() {
 	}
 	gridBlock := *input
 	g := parseGrid(gridBlock)
-
-	// iterate twice (TEST)
-	// fmt.Println(g)
-	// fmt.Println("")
-
-	// g, _ = iterate(g)
-	// fmt.Println(g)
-	// fmt.Println("")
-
-	// g, _ = iterate(g)
-	// fmt.Println(g)
-
-	// return
 
 	// print initial state
 	tm.MoveCursor(1, 1)

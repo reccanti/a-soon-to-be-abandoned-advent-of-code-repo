@@ -4,121 +4,174 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"sort"
-	"strconv"
 	"strings"
+	"time"
 
+	tm "github.com/buger/goterm"
+	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/11/grid"
 	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/util"
 )
 
-func checkSum(val int, preamble []int) bool {
-	// create a sorted copy of the array
-	sortedPreamble := make([]int, len(preamble))
-	copy(sortedPreamble, preamble)
-	sort.Ints(sortedPreamble)
+// utility function to parse the input into a grid
+func parseGrid(str string) grid.Grid {
+	strs := strings.Split(str, "\n")
+	numRows := len(strs)
+	numColumns := len(strs[0])
+	cells := []interface{}{}
+	for _, rowStr := range strs {
+		for _, colStr := range rowStr {
+			cells = append(cells, string(colStr))
+		}
+	}
+	return grid.New(numRows, numColumns, cells)
+}
 
-	// create two indexes, one at the beginning, and one at the end
-	// if the sum is greater than the given value, decrement the "end" index
-	// if hte sum is less than the given value, increment the "start" index
-	// loop until a solution is found or the indexes are equal
-	start := 0
-	end := len(sortedPreamble) - 1
-	for start != end {
-		sum := sortedPreamble[start] + sortedPreamble[end]
-		if sum > val {
-			end -= 1
-		} else if sum < val {
-			start += 1
+type neighborInfo struct {
+	numOccupied int
+	numEmpty    int
+	numFloor    int
+}
+
+func getOccupiedVisible(g grid.Grid, row int, column int) (*int, error) {
+	occupied := 0
+	if !g.IsInBounds(row, column) {
+		return nil, errors.New("row and column is out-of-bounds")
+	}
+	for r := -1; r <= 1; r++ {
+		for c := -1; c <= 1; c++ {
+			if r == 0 && c == 0 {
+			} else {
+				// iterate until we reach an occupied seat
+				// or until we reach the end of the grid
+				mod := 1
+				for {
+					curRow := r*mod + row
+					curCol := c*mod + column
+					if !g.IsInBounds(curRow, curCol) {
+						break
+					}
+					// fmt.Println(curRow, curCol)
+					cell, _ := g.Get(curRow, curCol)
+					if *cell == "L" {
+						break
+					} else if *cell == "#" {
+						// fmt.Println("got one")
+						occupied += 1
+						break
+					}
+					mod++
+				}
+			}
+		}
+	}
+	// fmt.Println(occupied)
+	return &occupied, nil
+}
+
+// determine the next tile based on neighbor iteration
+func getNewTile(g grid.Grid, row int, column int) (interface{}, error) {
+	cell, err := g.Get(row, column)
+	if err != nil {
+		return nil, err
+	}
+	occupied, err := getOccupiedVisible(g, row, column)
+	if err != nil {
+		return nil, err
+	}
+	// see if we should flip an empty cell
+	if *cell == "L" {
+		if *occupied == 0 {
+			newStr := "#"
+			return newStr, nil
 		} else {
-			return true
+			return *cell, nil
+		}
+	} else if *cell == "#" {
+		if *occupied >= 5 {
+			newStr := "L"
+			return newStr, nil
+		} else {
+			return *cell, nil
 		}
 	}
-	return false
+	return *cell, nil
 }
 
-// traverse the numbers list and check that each element
-// is the sum of two of the previous values
-func findInvalidEntry(preambleLength int, numbers []int) (*int, error) {
-	window := numbers[0:preambleLength]
-	for i, val := range numbers[preambleLength:] {
-		if !checkSum(val, window) {
-			return &val, nil
+// get the next iteration of the grid
+func iterate(g grid.Grid) (grid.Grid, int) {
+	newCells := []interface{}{}
+	changes := 0
+	for row := 0; row < g.Rows; row++ {
+		for col := 0; col < g.Columns; col++ {
+			oldCell, getErr := g.Get(row, col)
+			newCell, newErr := getNewTile(g, row, col)
+			if getErr != nil || newErr != nil {
+				fmt.Println(fmt.Errorf("Something went terribly wrong"))
+				break
+			}
+			if *oldCell != newCell {
+				changes += 1
+			}
+			newCells = append(newCells, newCell)
 		}
-		window = numbers[i+1 : i+preambleLength+1]
 	}
-	return nil, errors.New("all entries in the list are valid")
+	return grid.New(g.Rows, g.Columns, newCells), changes
 }
 
-// scan the list to find contiguous values that add to a sum
-func sum(ints ...int) int {
-	acc := 0
-	for _, i := range ints {
-		acc += i
-	}
-	return acc
-}
-
-func findContiguousValues(target int, numbers []int) ([]int, error) {
-	window := []int{}
-	for _, val := range numbers {
-		window = append(window, val)
-		s := sum(window...)
-		// if we're larger than the target, any other value will just
-		// make it larger, so we'll remove entries until we're less
-		// than or equal to the target value
-		for s > target {
-			window = window[1:]
-			s = sum(window...)
-		}
-		if s == target {
-			return window, nil
+// count the number of
+func countOccupiedSeats(g grid.Grid) int {
+	occupiedSeats := 0
+	for row := 0; row < g.Rows; row++ {
+		for col := 0; col < g.Columns; col++ {
+			cell, err := g.Get(row, col)
+			if err != nil {
+				fmt.Println(fmt.Errorf("Something went terribly wrong"))
+				break
+			}
+			if *cell == "#" {
+				occupiedSeats += 1
+			}
 		}
 	}
-	return nil, errors.New(fmt.Sprintf("no sum of entries adds to %d", target))
+	return occupiedSeats
 }
 
 func main() {
 	// get the input
-	filename := os.Args[2]
-	preambleLength, err := strconv.Atoi(os.Args[1])
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	filename := os.Args[1]
 	input, err := util.ParseRelativeFile(filename)
 	if err != nil {
 		return
 	}
-	numbersBlock := *input
-	numbersStr := strings.Split(numbersBlock, "\n")
-	numbers := []int{}
-	for _, str := range numbersStr {
-		num, err := strconv.Atoi(str)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		numbers = append(numbers, num)
+	gridBlock := *input
+	g := parseGrid(gridBlock)
+
+	// print initial state
+	tm.MoveCursor(1, 1)
+	tm.Clear()
+	tm.Println(g)
+	tm.Println("Occupied Seats:")
+	tm.Flush()
+
+	// loop until the number of changes is zero
+	numChanges := 0
+	g, numChanges = iterate(g)
+	for numChanges > 0 {
+		tm.MoveCursor(1, 1)
+		tm.Clear()
+		tm.Println(g)
+		tm.Println("Occupied Seats:")
+		tm.Flush()
+
+		g, numChanges = iterate(g)
+		time.Sleep(time.Second / 20)
 	}
 
-	// find the invalid number
-	invalidNumber, err := findInvalidEntry(preambleLength, numbers)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	// find the contiguous values that sum to the given number
-	values, err := findContiguousValues(*invalidNumber, numbers)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	// get the sum of the smallest and largest number in the list
-	sort.Ints(values)
-	smallest := values[0]
-	largest := values[len(values)-1]
-
-	fmt.Println(smallest + largest)
+	// print output
+	occupiedSeats := countOccupiedSeats(g)
+	tm.MoveCursor(1, 1)
+	tm.Clear()
+	tm.Println(g)
+	tm.Println("Occupied Seats:", occupiedSeats)
+	tm.Flush()
 }
