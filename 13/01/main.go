@@ -33,8 +33,6 @@ func main() {
 			buses = append(buses, num)
 		}
 	}
-	// fmt.Println(timestamp)
-	// fmt.Println(buses)
 	times := map[float64]int{}
 	keys := []float64{}
 	for _, id := range buses {
