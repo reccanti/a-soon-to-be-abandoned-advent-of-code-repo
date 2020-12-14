@@ -6,10 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
-	// "strings"
-	// "time"
 
-	// "github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/11/grid"
 	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/util"
 )
 
