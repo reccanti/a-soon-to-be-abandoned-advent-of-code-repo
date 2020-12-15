@@ -6,10 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
-	// "strings"
-	// "time"
 
-	// "github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/11/grid"
 	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/util"
 )
 
@@ -17,7 +14,7 @@ import (
 
 type MaskCommand struct {
 	ignoreMask int
-	applyMask  int
+	branches   []int
 }
 
 type MemCommand struct {
@@ -25,39 +22,58 @@ type MemCommand struct {
 	value   int
 }
 
-func parseMasks(str string) (*int, *int, error) {
-	// create the "ignore" mask
-	ignoreMaskStr := ""
-	for _, char := range str {
-		if string(char) == "X" {
-			ignoreMaskStr = ignoreMaskStr + "1"
-		} else {
-			ignoreMaskStr = ignoreMaskStr + "0"
-		}
-	}
-	ignoreMask, err := strconv.ParseInt(ignoreMaskStr, 2, 37)
-	if err != nil {
-		return nil, nil, errors.New("Unable to parse 'ignore' mask")
-	}
-	i := int(ignoreMask)
+// parsing functions
 
-	// create the "apply" mask
-	applyMaskStr := ""
-	for _, char := range str {
-		if string(char) == "X" {
-			applyMaskStr = applyMaskStr + "0"
-		} else {
-			applyMaskStr = applyMaskStr + string(char)
+func constructBranches(maskStr string) []int {
+	// construct a "main" binary number from a given value.
+	// if we encounter an "X" we log it as a pair of "floaters",
+	// which will be a "0" and "1" variant of the given index
+	base := 1
+	main := 0
+	floaters := [][]int{}
+	for i := len(maskStr) - 1; i >= 0; i-- {
+		char := string(maskStr[i])
+		if char == "1" {
+			main += 1 * base
 		}
+		if char == "X" {
+			floaters = append(floaters, []int{0 * base, 1 * base})
+		}
+		base *= 2
 	}
-	applyMask, err := strconv.ParseInt(applyMaskStr, 2, 37)
-	if err != nil {
-		return nil, nil, errors.New("Unable to parse 'apply' mask")
-	}
-	a := int(applyMask)
 
-	// return our masks!
-	return &i, &a, nil
+	// given our floaters from before, construct some
+	// branching paths.
+	branches := []int{0}
+	for _, f := range floaters {
+		newBranches := []int{}
+		for _, b := range branches {
+			newBranches = append(newBranches, b+f[0])
+			newBranches = append(newBranches, b+f[1])
+		}
+		branches = newBranches
+	}
+
+	// construct all of the addresses
+	addresses := []int{}
+	for _, b := range branches {
+		addresses = append(addresses, main+b)
+	}
+
+	return addresses
+}
+
+func constructIgnoreMask(maskStr string) int {
+	ignoreMask := 0
+	base := 1
+	for i := len(maskStr) - 1; i >= 0; i-- {
+		char := string(maskStr[i])
+		if !(char == "X" || char == "1") {
+			ignoreMask += 1 * base
+		}
+		base *= 2
+	}
+	return ignoreMask
 }
 
 // (mask|(mem)\[(\d+)\]) = (.+)
@@ -70,13 +86,11 @@ func parseCommand(str string) (interface{}, error) {
 	}
 	// parse and return a "mask" command
 	if res[1] == "mask" {
-		i, a, err := parseMasks(res[4])
-		if err != nil {
-			return nil, err
-		}
+		ignoreMask := constructIgnoreMask(res[4])
+		branches := constructBranches(res[4])
 		cmd := MaskCommand{
-			ignoreMask: *i,
-			applyMask:  *a,
+			ignoreMask: ignoreMask,
+			branches:   branches,
 		}
 		return cmd, nil
 	}
@@ -104,14 +118,14 @@ func parseCommand(str string) (interface{}, error) {
 type State struct {
 	memory     map[int]int
 	ignoreMask int
-	applyMask  int
+	branches   []int
 }
 
 func Init() State {
 	return State{
 		memory:     map[int]int{},
 		ignoreMask: 0,
-		applyMask:  0,
+		branches:   []int{},
 	}
 }
 
@@ -120,26 +134,37 @@ func (s State) Copy() State {
 	for k, v := range s.memory {
 		memory[k] = v
 	}
+	branches := []int{}
+	for _, v := range s.branches {
+		branches = append(branches, v)
+	}
 	return State{
 		memory:     memory,
 		ignoreMask: s.ignoreMask,
-		applyMask:  s.applyMask,
+		branches:   branches,
 	}
 }
 
 func applyCommand(s State, cmd interface{}) State {
+	// fmt.Println(cmd)
 	ns := s.Copy()
 	switch cmd.(type) {
 	case MaskCommand:
 		ns.ignoreMask = cmd.(MaskCommand).ignoreMask
-		ns.applyMask = cmd.(MaskCommand).applyMask
+		ns.branches = cmd.(MaskCommand).branches
 	case MemCommand:
 		// let's do some boolean math!
-		val := cmd.(MemCommand).value&ns.ignoreMask | ns.applyMask
-		ns.memory[cmd.(MemCommand).address] = val
+		val := cmd.(MemCommand).value
+		for _, b := range ns.branches {
+			base := cmd.(MemCommand).address
+			address := base&ns.ignoreMask | b
+			ns.memory[address] = val
+		}
 	}
 	return ns
 }
+
+// Heyo Here's the main loop!
 
 func main() {
 	// get the input

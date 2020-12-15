@@ -2,50 +2,38 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"testing"
 )
 
-// func TestGetNeighborInfo(t *testing.T) {
-// 	gridStr := "" +
-// 		"LLL\n" +
-// 		"#..\n" +
-// 		"..."
-// 	g := parseGrid(gridStr)
-// 	info := getNeighborInfo(g, 1, 1)
-// 	if info.numEmpty != 3 {
-// 		t.Errorf(fmt.Sprintf("improperly calculated the nuber of 'empty' neighbors. Should be '3' but instead is '%d'", info.numEmpty))
-// 	}
-// 	if info.numOccupied != 1 {
-// 		t.Errorf(fmt.Sprintf("improperly calculated the nuber of 'occupied' neighbors. Should be '1' but instead is '%d'", info.numOccupied))
-// 	}
-// 	if info.numFloor != 4 {
-// 		t.Errorf(fmt.Sprintf("improperly calculated the nuber of 'floor' neighbors. Should be '4' but instead is '%d'", info.numFloor))
-// 	}
-// }
+func TestMaskFunctions(t *testing.T) {
+	maskStr := "000000000000000000000000000000X1001X"
+	ignoreMask := constructIgnoreMask(maskStr)
+	branches := constructBranches(maskStr)
 
-func TestGetOccupiedVisible(t *testing.T) {
-	gridStr := "" +
-		"LLL#L\n" +
-		"#..L#\n" +
-		".L...\n" +
-		".....\n" +
-		"L#LLL"
-	g := parseGrid(gridStr)
-	for r := 0; r < g.Rows; r++ {
-		for c := 0; c < g.Columns; c++ {
-			num, err := getOccupiedVisible(g, r, c)
-			fmt.Println(r, c, "-- START --")
-			fmt.Println("Occupied Visible:", *num)
-			fmt.Println(g)
-			// fmt.Println(err)
-			if err == nil {
-				t.Errorf("should be out-of-bounds")
-				// return
-			}
-			if err == nil {
-				fmt.Println(*num)
-			}
+	expectedBranches := []int{
+		0b000000000000000000000000000000011010,
+		0b000000000000000000000000000000011011,
+		0b000000000000000000000000000000111010,
+		0b000000000000000000000000000000111011,
+	}
+
+	fmt.Println("Masked")
+	fmt.Println(fmt.Sprintf("%036b", ignoreMask))
+	fmt.Println(fmt.Sprintf("%036b", 42))
+
+	paths := []int{}
+	for _, b := range branches {
+		paths = append(paths, 42&ignoreMask|b)
+	}
+
+	sort.Ints(paths)
+
+	fmt.Println("")
+	fmt.Println("Expected Branches")
+	for i := 0; i < len(paths)-1; i++ {
+		if paths[i] != expectedBranches[i] {
+			t.Errorf("given paths don't match\n%v\n%v", paths[i], expectedBranches[i])
 		}
 	}
-	t.Errorf("uh")
 }
