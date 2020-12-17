@@ -7,7 +7,10 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
+	tm "github.com/buger/goterm"
+	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/16/logic"
 	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/util"
 )
 
@@ -93,6 +96,49 @@ func parseFields(fieldStr string) ([]int, error) {
 }
 
 /**
+ * Here we go! Let's deduce this bad boy!
+ * Also, everything here is probably inefficient as hell
+ */
+func deduce(t logic.Table) (logic.Table, bool) {
+
+	numRows := len(t.Rows)
+	numCols := len(t.Columns)
+
+	// isSolved := false
+	// for !isSolved {
+	// first, let's eliminate any entries we can
+	for i := 0; i < numRows; i++ {
+		for j := 0; j < numCols; j++ {
+			if t.IsValid(i, j) && !t.IsSolved(i, j) {
+				// fields, rule := t.Get(i, j)
+				cell := t.Get(i, j)
+				fields := cell.RowValue.([]int)
+				rule := cell.ColumnValue.(Rule)
+				for _, f := range fields {
+					if !(rule.acceptedValues[f]) {
+						t.MarkInvalid(i, j)
+					}
+				}
+			}
+		}
+	}
+	// now, let's see if we can solve any rows or columns
+	for i := 0; i < numRows; i++ {
+		unsolved := t.GetUnsolvedRow(i)
+		if len(unsolved) == 1 {
+			t.MarkSolved(unsolved[0].Row, unsolved[0].Column)
+		}
+	}
+
+	_, hasSolution := t.GetSolution()
+	if hasSolution {
+		return t, true
+	} else {
+		return t, false
+	}
+}
+
+/**
  * The thing where the goddamn app runs
  */
 
@@ -107,7 +153,7 @@ func main() {
 	// parse all the goddamn fields
 
 	ruleBlock := blocks[0]
-	// myTicketBlock := blocks[1]
+	myTicketBlock := blocks[1]
 	nearTicketsBlock := blocks[2]
 
 	rules, err := parseRules(ruleBlock)
@@ -115,11 +161,12 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	// we can't use rules as a key directly, so we construct
-	// this intermediary lookup map
-	stupidRuleLookup := map[string]Rule{}
-	for _, r := range rules {
-		stupidRuleLookup[r.HashKey()] = r
+
+	tstrs := strings.Split(myTicketBlock, "\n")
+	myFields, err := parseFields(tstrs[1])
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
 
 	ntstrs := strings.Split(nearTicketsBlock, "\n")
@@ -165,60 +212,48 @@ func main() {
 			potentialFields[i] = append(potentialFields[i], v)
 		}
 	}
-	fmt.Println(potentialFields)
 
-	// let's maintain two maps, a map of "solved" entries
-	// (fields assigned to a rule), and a map of "unsolved" entries
-	// (fields with several potential rules). We'll iterate over
-	// this structure until we can deduce a rule. Once all the
-	// rules have been deduced, we'll make note of that, narrowing
-	// down the potential rules for each field to see if we can
-	// deduce any more
-
-	// Step 1: Construct an initial list
-	// in this case, "i" refers to the index of an entry in the potential
-	// fields list and will be used to look it up
-	unsolvedFields := map[int][]Rule{}
-	for i, fieldValues := range potentialFields {
-
-		// create a lookup chart for potential rules. Everything
-		// is true by default. We'll remove values that we can
-		// rule out
-		potentialRulesLookup := map[string]bool{}
-		for _, r := range rules {
-			potentialRulesLookup[r.HashKey()] = true
-		}
-
-		for _, val := range fieldValues {
-			for hashkey, _ := range potentialRulesLookup {
-				r := stupidRuleLookup[hashkey]
-				if !r.acceptedValues[val] {
-					potentialRulesLookup[r.HashKey()] = false
-					break
-				}
-			}
-		}
-
-		potentialRules := []Rule{}
-		for hashkey, isValid := range potentialRulesLookup {
-			if isValid {
-				r := stupidRuleLookup[hashkey]
-				potentialRules = append(potentialRules, r)
-			}
-		}
-
-		unsolvedFields[i] = potentialRules
+	// fuck it. Convert it all to interfaces
+	potentialFieldsI := []interface{}{}
+	for _, f := range potentialFields {
+		potentialFieldsI = append(potentialFieldsI, f)
 	}
-	for _, v := range unsolvedFields {
-		fmt.Println(v)
-		fmt.Println(len(v))
+	rulesI := []interface{}{}
+	for _, r := range rules {
+		rulesI = append(rulesI, r)
 	}
 
-	// sum 'em together
+	t := logic.NewTable(potentialFieldsI, rulesI)
+	hasSolution := false
+	tm.MoveCursor(1, 1)
+	tm.Clear()
+	tm.Println(t)
+	tm.Flush()
+	for !hasSolution {
+		t, hasSolution = deduce(t)
+		tm.MoveCursor(1, 1)
+		tm.Clear()
+		tm.Println(t)
+		tm.Flush()
 
-	// sum := 0
-	// for _, i := range invalidFields {
-	// 	sum += i
-	// }
-	// fmt.Println(sum)
+		time.Sleep(time.Second / 2)
+	}
+
+	// calculate the solution
+	solutionCells, _ := t.GetSolution()
+	departureIndices := []int{}
+	for _, c := range solutionCells {
+		if strings.Contains(c.ColumnValue.(Rule).name, "departure") {
+			departureIndices = append(departureIndices, c.Row)
+		}
+	}
+	// fmt.Println(departureIndices)
+
+	product := 1
+	for _, i := range departureIndices {
+		product *= myFields[i]
+	}
+
+	fmt.Println(product)
+
 }

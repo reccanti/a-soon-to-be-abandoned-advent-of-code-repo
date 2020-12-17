@@ -5,7 +5,6 @@
 package logic
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -14,6 +13,13 @@ type Table struct {
 	Columns []interface{}
 	invalid map[int]bool
 	solved  map[int]bool
+}
+
+type Cell struct {
+	Row         int
+	RowValue    interface{}
+	Column      int
+	ColumnValue interface{}
 }
 
 func NewTable(rows []interface{}, columns []interface{}) Table {
@@ -25,31 +31,40 @@ func NewTable(rows []interface{}, columns []interface{}) Table {
 	}
 }
 
+func NewCell(row int, rowValue interface{}, column int, columnValue interface{}) Cell {
+	return Cell{
+		Row:         row,
+		RowValue:    rowValue,
+		Column:      column,
+		ColumnValue: columnValue,
+	}
+}
+
 /**
  * Generic Getters
  */
 
-func (t Table) Get(r int, c int) (interface{}, interface{}) {
+func (t Table) Get(r int, c int) Cell {
 	rowElem := t.Rows[r]
 	colElem := t.Columns[c]
 
-	return rowElem, colElem
+	return NewCell(r, rowElem, c, colElem)
 }
 
-func (t Table) GetRow(r int) []([]interface{}) {
-	row := []([]interface{}){}
+func (t Table) GetRow(r int) []Cell {
+	row := []Cell{}
 	for c := 0; c < len(t.Columns); c++ {
-		rowElem, colElem := t.Get(r, c)
-		row = append(row, []interface{}{rowElem, colElem})
+		cell := t.Get(r, c)
+		row = append(row, cell)
 	}
 	return row
 }
 
-func (t Table) GetColumn(c int) []([]interface{}) {
-	col := []([]interface{}){}
+func (t Table) GetColumn(c int) []Cell {
+	col := []Cell{}
 	for r := 0; r < len(t.Rows); r++ {
-		rowElem, colElem := t.Get(r, c)
-		col = append(col, []interface{}{rowElem, colElem})
+		cell := t.Get(r, c)
+		col = append(col, cell)
 	}
 	return col
 }
@@ -72,24 +87,23 @@ func (t Table) IsValid(r int, c int) bool {
 	return !i
 }
 
-func (t Table) GetUnsolvedRow(r int) []([]interface{}) {
-	row := []([]interface{}){}
+func (t Table) GetUnsolvedRow(r int) []Cell {
+	row := []Cell{}
 	for c := 0; c < len(t.Columns); c++ {
 		if t.IsValid(r, c) && !t.IsSolved(r, c) {
-			rowElem, colElem := t.Get(r, c)
-			row = append(row, []interface{}{rowElem, colElem})
+			cell := t.Get(r, c)
+			row = append(row, cell)
 		}
 	}
 	return row
 }
 
-func (t Table) GetUnsolvedColumn(c int) []([]interface{}) {
-	col := []([]interface{}){}
+func (t Table) GetUnsolvedColumn(c int) []Cell {
+	col := []Cell{}
 	for r := 0; r < len(t.Rows); r++ {
 		if t.IsValid(r, c) && !t.IsSolved(r, c) {
-			fmt.Println(r, c, t.solved)
-			rowElem, colElem := t.Get(r, c)
-			col = append(col, []interface{}{rowElem, colElem})
+			cell := t.Get(r, c)
+			col = append(col, cell)
 		}
 	}
 	return col
@@ -118,6 +132,26 @@ func (t Table) IsSolved(r int, c int) bool {
 		return false
 	}
 	return i
+}
+
+func (t Table) GetSolution() ([]Cell, bool) {
+	// the number of "solved" entries should be
+	// equal to the number of rows or columns
+	// in our table
+	solvedEntries := []Cell{}
+	for i := 0; i < len(t.Rows); i++ {
+		for j := 0; j < len(t.Columns); j++ {
+			if t.IsSolved(i, j) {
+				cell := t.Get(i, j)
+				solvedEntries = append(solvedEntries, cell)
+			}
+		}
+	}
+	if len(solvedEntries) == len(t.Rows) {
+		return solvedEntries, true
+	} else {
+		return solvedEntries, false
+	}
 }
 
 /**
