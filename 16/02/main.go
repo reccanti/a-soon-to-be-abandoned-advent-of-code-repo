@@ -18,6 +18,13 @@ import (
  * Rule shit
  */
 
+/**
+ *         +----+
+ *	      +----+ |
+ *		  |    | +
+ *		  +----+
+ */
+
 // (.+): (\d+-\d+) or (\d+-\d+)
 type Rule struct {
 	name           string
