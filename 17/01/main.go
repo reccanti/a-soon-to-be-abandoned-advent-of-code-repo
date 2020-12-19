@@ -165,8 +165,12 @@ func main() {
 	}
 
 	space := parseCubes(*input)
-	for i := 1; i <= 6; i++ {
-		space = space.Next()
-	}
+	space = space.Next()
+	fmt.Println(space.cubes)
+	// fmt.Println(space.cubes)
+	// for i := 1; i <= 6; i++ {
+	// 	space = space.Next()
+	// 	fmt.Println(space.cubes)
+	// }
 	fmt.Println(len(space.cubes))
 }
