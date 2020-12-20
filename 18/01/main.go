@@ -233,7 +233,7 @@ func evaluate(e Expression) int {
 func main() {
 	// initialize the application
 	app := tview.NewApplication()
-	list := tview.NewList()
+	table := tview.NewTable().SetBorders(true).SetSelectable(true, false)
 
 	// get the input
 	filename := os.Args[1]
@@ -243,33 +243,35 @@ func main() {
 	}
 
 	// parse all of our inputs and add them to the list
-	list.AddItem("Quit", "Press to exit", 'q', func() {
-		app.Stop()
-	})
+	// list.AddItem("Quit", "Press to exit", 'q', func() {
+	// 	app.Stop()
+	// })
 	sum := 0
-	for _, i := range inputs {
-		expptr, err := parseExpression(i)
+	i := 0
+	for _, expstr := range inputs {
+		expptr, err := parseExpression(expstr)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 		exp := *expptr
 		num := evaluate(exp)
-		sum += num
 		numstr := strconv.Itoa(num)
-		list.AddItem(i, numstr, '0', nil)
+
+		expCell := tview.NewTableCell(expstr)
+		numCell := tview.NewTableCell(numstr)
+		table.SetCell(i, 0, expCell)
+		table.SetCell(i, 1, numCell)
+
+		sum += num
+		i++
 	}
 	sumstr := strconv.Itoa(sum)
-	list.AddItem("Sum", sumstr, '0', nil)
-	if err := app.SetRoot(list, true).SetFocus(list).Run(); err != nil {
+	sumLabelCell := tview.NewTableCell("Sum")
+	sumCell := tview.NewTableCell(sumstr)
+	table.SetCell(i, 0, sumLabelCell)
+	table.SetCell(i, 1, sumCell)
+	if err := app.SetRoot(table, true).SetFocus(table).Run(); err != nil {
 		panic(err)
 	}
-
-	// app := tview.NewApplication()
-	// list := tview.NewList().
-	// 	AddItem("List item 1", "Some explanatory text", 'a', nil).
-	// 	AddItem("List item 2", "Some explanatory text", 'b', nil).
-	// 	AddItem("List item 3", "Some explanatory text", 'c', nil).
-	// 	AddItem("List item 4", "Some explanatory text", 'd', nil).
-
 }
