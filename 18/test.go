@@ -1,0 +1,46 @@
+package main
+
+import (
+	"fmt"
+
+	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/18/tree"
+)
+
+func main() {
+	// l1 := tree.MakeLiteral(1)
+	// l2 := tree.MakeLiteral(2)
+	// // l3 := tree.MakeLiteral(3)
+	// o1 := tree.MakeOperator("+")
+	// o2 := tree.MakeOperator("*")
+
+	// // o1.Add(l1)
+	// // o1.Add(l2)
+	// // o2.Add(l3)
+	// // o2.Add(o1)
+
+	// // nodes := []interface{}{l1, o, l2}
+
+	// tree := tree.MakeTree(l1)
+	// success1 := tree.Add(o1)
+	// success2 := tree.Add(l2)
+	// tree.Add(o2)
+
+	// fmt.Println(success1)
+	// fmt.Println(success2)
+
+	// fmt.Println(tree)
+
+	l1 := tree.MakeLiteral(1)
+	o1 := tree.MakeOperator("*")
+	l2 := tree.MakeLiteral(2)
+	o2 := tree.MakeOperator("+")
+	l3 := tree.MakeLiteral(3)
+
+	n := tree.Make(l1)
+	n, _ = n.Add(o1)
+	n, _ = n.Add(l2)
+	n, _ = n.Add(o2)
+	n, _ = n.Add(l3)
+
+	fmt.Println(n)
+}
