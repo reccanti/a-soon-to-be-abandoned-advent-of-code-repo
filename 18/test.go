@@ -30,17 +30,37 @@ func main() {
 
 	// fmt.Println(tree)
 
-	l1 := tree.MakeLiteral(1)
-	o1 := tree.MakeOperator("*")
-	l2 := tree.MakeLiteral(2)
-	o2 := tree.MakeOperator("+")
-	l3 := tree.MakeLiteral(3)
+	// 1 * 2 + 3
+	// 1 * (2 + 3)
+
+	// l1 := tree.MakeLiteral(1)
+	// o1 := tree.MakeTimes()
+	// l2 := tree.MakeLiteral(2)
+	// o2 := tree.MakePlus()
+	// l3 := tree.MakeLiteral(3)
+
+	// n := tree.Make(l1)
+	// n, _ = n.Add(o1)
+	// n, _ = n.Add(l2)
+	// n, _ = n.Add(o2)
+	// n, _ = n.Add(l3)
+
+	// 2 * 3 + 4 * 5
+	l1 := tree.MakeLiteral(2)
+	o1 := tree.MakeTimes()
+	l2 := tree.MakeLiteral(3)
+	o2 := tree.MakePlus()
+	l3 := tree.MakeLiteral(4)
+	o3 := tree.MakeTimes()
+	l4 := tree.MakeLiteral(5)
 
 	n := tree.Make(l1)
 	n, _ = n.Add(o1)
 	n, _ = n.Add(l2)
 	n, _ = n.Add(o2)
 	n, _ = n.Add(l3)
+	n, _ = n.Add(o3)
+	n, _ = n.Add(l4)
 
-	fmt.Println(n)
+	fmt.Println(n.Evaluate())
 }

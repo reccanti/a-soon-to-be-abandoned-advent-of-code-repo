@@ -4,156 +4,6 @@ import (
 	"fmt"
 )
 
-// Literal - Holds "int" values
-
-// type Literal struct {
-// 	value int
-// }
-
-// func (l Literal) String() string {
-// 	return fmt.Sprintf("%d", l.value)
-// }
-
-// func MakeLiteral(value int) Literal {
-// 	return Literal{
-// 		value,
-// 	}
-// }
-
-// // Operator - combines "Literals" and other Operations
-
-// type Operator struct {
-// 	value string
-// 	left  *interface{}
-// 	right *interface{}
-// }
-
-// func (o Operator) String() string {
-// 	left := ""
-// 	if o.left != nil {
-// 		left = fmt.Sprintf("%v", *o.left)
-// 	}
-// 	right := ""
-// 	if o.right != nil {
-// 		right = fmt.Sprintf("%v", *o.right)
-// 	}
-// 	return fmt.Sprintf("(%s %s %v)", left, o.value, right)
-// }
-
-// func MakeOperator(value string) Operator {
-// 	return Operator{
-// 		value: value,
-// 		left:  nil,
-// 		right: nil,
-// 	}
-// }
-
-// func (o *Operator) Add(node interface{}) bool {
-// 	if o.left == nil {
-// 		o.left = &node
-// 		return true
-// 	} else if o.right == nil {
-// 		o.right = &node
-// 		return true
-// 	} else {
-// 		return false
-// 	}
-// }
-
-// // Tree - The structure which holds everything together!
-
-// type Tree struct {
-// 	root *interface{}
-// }
-
-// func (t Tree) String() string {
-// 	return fmt.Sprintf("%v", *t.root)
-// }
-
-// func MakeTree(root interface{}) Tree {
-// 	return Tree{
-// 		root: &root,
-// 	}
-// }
-
-// func (t Tree) HasNext() bool {
-// 	next := []*interface{}{t.root}
-// 	for len(next) > 0 {
-// 		curptr := next[0]
-// 		cur := *curptr
-// 		next = next[1:]
-
-// 		switch cur.(type) {
-// 		case Literal:
-// 			// do nothing
-// 		case Operator:
-// 			// if the left or right operator exists, add it to our "next" array
-// 			if cur.(Operator).left != nil {
-// 				next = append(next, cur.(Operator).left)
-// 			}
-// 			if cur.(Operator).right != nil {
-// 				next = append(next, cur.(Operator).right)
-// 			}
-// 			// if left or right is nil, we've found an empty slot!
-// 			if cur.(Operator).left == nil {
-// 				return true
-// 			} else if cur.(Operator).right == nil {
-// 				return true
-// 			}
-// 		}
-// 	}
-// 	return false
-// }
-
-// func (t *Tree) Add(node interface{}) bool {
-// 	// attempt to get the next available node. If we
-// 	// cannot do this, make the current node the new root
-// 	next := []*interface{}{t.root}
-// 	for len(next) > 0 {
-// 		curptr := next[0]
-// 		cur := *curptr
-// 		next = next[1:]
-
-// 		switch cur.(type) {
-// 		case Literal:
-// 			// do nothing
-// 		case Operator:
-// 			op := cur.(Operator)
-// 			// if the left or right operator exists, add it to our "next" array
-// 			if cur.(Operator).left != nil {
-// 				next = append(next, curptr)
-// 			}
-// 			if cur.(Operator).right != nil {
-// 				next = append(next, curptr)
-// 			}
-// 			// if left or right is nil, we've found an empty slot!
-// 			op.Add(node)
-// 			var newNode interface{}
-// 			newNode = op
-// 			fmt.Println(newNode)
-// 			curptr = &newNode
-// 			return true
-// 		}
-// 	}
-// 	switch node.(type) {
-// 	case Literal:
-// 		// do nothing because there are no open slots
-// 	case Operator:
-// 		// if the next node is an operator, make it the new root
-// 		// of our tree
-// 		op := node.(Operator)
-// 		curRoot := *t.root
-// 		op.Add(curRoot)
-
-// 		var newRoot interface{}
-// 		newRoot = op
-// 		t.root = &newRoot
-
-// 		return true
-// 	}
-// 	return false
-// }
-
 // Literal type
 
 type Literal struct {
@@ -172,14 +22,33 @@ func MakeLiteral(value int) Literal {
 
 type Operator struct {
 	operation string
+	// higher priority gets precedence
+	priority int
 }
 
 func (o Operator) String() string {
 	return fmt.Sprintf("%s", o.operation)
 }
 
-func MakeOperator(operation string) Operator {
-	return Operator{operation}
+func MakeOperator(operation string, priority int) Operator {
+	return Operator{
+		operation,
+		priority,
+	}
+}
+
+func MakeTimes() Operator {
+	return Operator{
+		operation: "*",
+		priority:  1,
+	}
+}
+
+func MakePlus() Operator {
+	return Operator{
+		operation: "+",
+		priority:  2,
+	}
 }
 
 // Tree types
@@ -241,6 +110,22 @@ func (n Node) attemptAdd(value interface{}) (Node, bool) {
 			n.next = append(n.next, newNode)
 			return n, true
 		} else {
+			// if the node is an operator whose priority is higher than
+			// the current node's priority, swap it out
+			switch value.(type) {
+			case Operator:
+				curPriority := n.value.(Operator).priority
+				valPriority := value.(Operator).priority
+				if curPriority < valPriority {
+					index := len(n.next) - 1
+					new, ok := n.next[index].newRoot(value)
+					if ok {
+						n.next[index] = new
+						return n, true
+					}
+				}
+			}
+
 			for i, next := range n.next {
 				new, ok := next.attemptAdd(value)
 				if ok {
@@ -257,10 +142,8 @@ func (n Node) attemptAdd(value interface{}) (Node, bool) {
 // do this if we can't insert a node somewhere further down
 // the tree
 func (n Node) newRoot(value interface{}) (Node, bool) {
-	// switch parent.value.(type) {
-	// // if the parent is a Literal and the value is an Operator,
-	// // we'll make it the new root
-	// case Literal:
+	// if the the value is an Operator,
+	// we'll make it the new root
 	switch value.(type) {
 	case Operator:
 		newParent := Make(value)
@@ -268,6 +151,34 @@ func (n Node) newRoot(value interface{}) (Node, bool) {
 		n = newParent
 		return n, true
 	}
-	// }
 	return n, false
+}
+
+func (n Node) Evaluate() int {
+	switch n.value.(type) {
+	case Literal:
+		return n.value.(Literal).value
+	case Operator:
+		vals := []int{}
+		for _, n := range n.next {
+			val := n.Evaluate()
+			vals = append(vals, val)
+		}
+		fmt.Println(vals)
+		switch n.value.(Operator).operation {
+		case "*":
+			product := 1
+			for _, v := range vals {
+				product *= v
+			}
+			return product
+		case "+":
+			sum := 0
+			for _, v := range vals {
+				sum += v
+			}
+			return sum
+		}
+	}
+	return 0
 }
