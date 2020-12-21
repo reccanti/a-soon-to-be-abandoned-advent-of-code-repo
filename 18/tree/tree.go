@@ -97,14 +97,16 @@ func Make(value interface{}) Node {
 	}
 }
 
-func MakeGroupNode(n Node) Node {
-	next := []Node{}
-	next = append(next, n)
-	return Node{
-		value: MakeGroup(),
-		next:  next,
-	}
-}
+// Group type
+
+// func MakeGroupNode(n Node) Node {
+// 	next := []Node{}
+// 	next = append(next, n)
+// 	return Node{
+// 		value: MakeGroup(),
+// 		next:  next,
+// 	}
+// }
 
 func (n Node) Add(value interface{}) (Node, bool) {
 	// we'll maintain references to the "parent" and "next"
@@ -119,10 +121,6 @@ func (n Node) Add(value interface{}) (Node, bool) {
 }
 
 func (n Node) attemptAdd(value interface{}) (Node, bool) {
-	// fmt.Println("Attempting to add", value)
-	// fmt.Println("to", n)
-	// fmt.Println("")
-	// check := false
 	switch n.value.(type) {
 	case EmptyNode:
 		// if our current node is an empty node, just replace it
@@ -134,45 +132,14 @@ func (n Node) attemptAdd(value interface{}) (Node, bool) {
 		// there isn't an empty slot, but one of the next nodes
 		// is another operator, attempt to add it to that
 		if len(n.next) < 2 {
-			if n.value.(Operator).operation == "()" {
-				switch value.(type) {
-				case Operator:
-					newNode := Make(value)
-					newNode.next = append(newNode.next, n)
-					n = newNode
-					return n, true
-				}
-				// if the node is a group
-			} else {
-				var newNode Node
-				switch value.(type) {
-				case Node:
-					newNode = value.(Node)
-				default:
-					newNode = Make(value)
-				}
-				n.next = append(n.next, newNode)
-				return n, true
-			}
+			newNode := Make(value)
+			n.next = append(n.next, newNode)
+			return n, true
 		} else {
+			switch value.(type) {
 			// if the node is an operator whose priority is higher than
 			// the current node's priority, swap it out
-			switch value.(type) {
-			case Node:
-				// if we have a group, just append it to the next slot
-				for i, next := range n.next {
-					new, ok := next.attemptAdd(value)
-					if ok {
-						n.next[i] = new
-						return n, true
-					}
-				}
 			case Operator:
-				// fmt.Println("Attempting to add", value)
-				// fmt.Println("to", n)
-				// fmt.Println("")
-				// check = true
-
 				curPriority := n.value.(Operator).priority
 				valPriority := value.(Operator).priority
 
@@ -187,24 +154,11 @@ func (n Node) attemptAdd(value interface{}) (Node, bool) {
 			}
 
 			for i, next := range n.next {
-				// if check {
-				// 	fmt.Println("next value")
-				// 	fmt.Println(next)
-				// }
 				new, ok := next.attemptAdd(value)
 				if ok {
 					n.next[i] = new
-					// if check {
-					// 	fmt.Println("resulting value")
-					// 	fmt.Println(n)
-					// }
 					return n, true
 				}
-				// else {
-				// 	if check {
-				// 		fmt.Println("was not okay")
-				// 	}
-				// }
 			}
 		}
 	}
@@ -230,7 +184,7 @@ func (n Node) newRoot(value interface{}) (Node, bool) {
 func (n Node) Evaluate() int {
 	switch n.value.(type) {
 	case Literal:
-		// fmt.Println("Literal:", n.value)
+		// fmt.Println("Literal:", n.value.(Literal).value)
 		return n.value.(Literal).value
 	case Operator:
 		vals := []int{}
@@ -251,14 +205,10 @@ func (n Node) Evaluate() int {
 			for _, v := range vals {
 				sum += v
 			}
-			// fmt.Println("Sum: Evaluating", vals)
 			return sum
-		case "()":
-			// for groups, pass it to the value on
-			// fmt.Println("Group: Evaluating", vals)
-			return vals[0]
 		}
+	case Node:
+		return n.value.(Node).Evaluate()
 	}
-	fmt.Println("returning nothing")
 	return 0
 }
