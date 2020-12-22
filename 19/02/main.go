@@ -1,134 +1,198 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
-	"unicode"
 
-	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/18/tree"
 	"github.com/reccanti/a-soon-to-be-abandoned-advent-of-code-repo/util"
-	"github.com/rivo/tview"
 )
 
-func makeNumber(numBuffer []rune) int {
-	num := 0
-	for _, n := range numBuffer {
-		num = num*10 + int(n-'0')
+// fancy go programming. I sure hope this doesn't bite me in the ass!
+// lookup := map[int](func() []string){}
+// 	lookup[0] = func() []string {
+// 		return []string{"a"}
+// 	}
+// 	fmt.Println(lookup[0]())
+
+// `(\d+): (.+)`
+// `"(.*)"`
+func parseRules(str string) (int, interface{}, error) {
+	// first things first, we want to get the "index"
+	// of the rule
+	indexExp := regexp.MustCompile(`(\d+): (.+)`)
+	res := indexExp.FindStringSubmatch(str)
+	if len(res) != 3 {
+		return -1, nil, errors.New("did not parse the rule string correctly")
 	}
-	return num
+	index, err := strconv.Atoi(res[1])
+	if err != nil {
+		return -1, nil, err
+	}
+
+	// next, we parse the remaining fields. Depending
+	// on what we're parsing, it'll be either a string
+	// or an array of additional indexes to check
+	stringValueExp := regexp.MustCompile(`"(.*)"`)
+	stringRes := stringValueExp.FindStringSubmatch(res[2])
+	if len(stringRes) == 2 {
+		return index, stringRes[1], nil
+	}
+
+	groups := strings.Split(res[2], "|")
+	inputs := [][]int{}
+	for _, g := range groups {
+		combos := []int{}
+		rules := strings.Split(g, " ")
+		for _, r := range rules {
+			if r == "" {
+				continue
+			}
+			rule, err := strconv.Atoi(r)
+			if err != nil {
+				return -1, nil, err
+			}
+			combos = append(combos, rule)
+		}
+		inputs = append(inputs, combos)
+	}
+	return index, inputs, nil
 }
 
-func parseString(input string) []interface{} {
-	removeWhitespace := strings.ReplaceAll(input, " ", "")
-
-	numBuffer := []rune{}
-	tokens := []interface{}{}
-	for _, char := range removeWhitespace {
-		if unicode.IsDigit(char) {
-			numBuffer = append(numBuffer, char)
-		} else {
-			if len(numBuffer) > 0 {
-				num := makeNumber(numBuffer)
-				tokens = append(tokens, num)
-				numBuffer = []rune{}
+/**
+ * Utility function to get all the unique permutations of two
+ * arrays of strings, so:
+ *
+ * ["a", "b"], ["a", "b"]
+ *
+ * would return:
+ *
+ * ["aa", "ab", "ba", "bb"]
+ *
+ * and:
+ *
+ * ["a", "a"], ["b", "b"]
+ *
+ * would return:
+ *
+ * ["aa", "bb"]
+ */
+func zip(allStrs ...[]string) []string {
+	// first, create a naive list of all the
+	// different combinations of strings
+	naiveStrings := []string{""}
+	for _, strSet := range allStrs {
+		combosInSet := []string{}
+		for _, baseStr := range naiveStrings {
+			for _, str := range strSet {
+				combosInSet = append(combosInSet, baseStr+str)
 			}
-			tokens = append(tokens, string(char))
+		}
+		naiveStrings = combosInSet
+	}
+
+	// now, we'll dedupe any elements in these arrays
+	lookup := map[string]bool{}
+	res := []string{}
+	for _, str := range naiveStrings {
+		if !lookup[str] {
+			res = append(res, str)
+			lookup[str] = true
 		}
 	}
-	if len(numBuffer) > 0 {
-		num := makeNumber(numBuffer)
-		tokens = append(tokens, num)
-	}
-	return tokens
+	return res
 }
 
-func parseTokens(inputs []interface{}) (tree.Node, []interface{}) {
-	t := tree.MakeEmpty()
-	for len(inputs) > 0 {
-		in := inputs[0]
-		inputs = inputs[1:]
+// just a test main. Delete this later
+// func main() {
+// 	// should just return ["a"]
+// 	strs1 := zip([]string{"a"})
+// 	fmt.Println(strs1)
 
-		switch in.(type) {
-		case int:
-			l := tree.MakeLiteral(in.(int))
-			newT, ok := t.Add(l)
-			if !ok {
-				fmt.Sprintln("error adding literal %v", l)
-			}
-			t = newT
-		case string:
-			switch in.(string) {
-			case "*":
-				o := tree.MakeTimes()
-				newT, ok := t.Add(o)
-				if !ok {
-					fmt.Sprintln("error adding operator %v", o)
-				}
-				t = newT
-			case "+":
-				o := tree.MakePlus()
-				newT, ok := t.Add(o)
-				if !ok {
-					fmt.Sprintln("error adding operator %v", o)
-				}
-				t = newT
-			case ")":
-				return t, inputs
-			case "(":
-				group, remaining := parseTokens(inputs)
-				// fmt.Println(n)
-				newT, ok := t.Add(group)
-				if !ok {
-					fmt.Sprintln("error adding group %v", group)
-				}
-				// fmt.Println(newT)
-				t = newT
-				inputs = remaining
-			}
-		}
-	}
-	return t, inputs
-}
+// 	strs2 := zip([]string{"a"}, []string{"a"})
+// 	fmt.Println(strs2)
+
+// 	strs3 := zip([]string{"a", "a"}, []string{"b", "b"})
+// 	fmt.Println(strs3)
+
+// 	strs4 := zip([]string{"a", "b", "ab"}, []string{"a", "b"})
+// 	fmt.Println(strs4)
+// }
 
 func main() {
-	// initialize the application
-	app := tview.NewApplication()
-	table := tview.NewTable().SetBorders(true).SetSelectable(true, false)
-
 	// get the input
 	filename := os.Args[1]
-	inputs, err := util.ParseRelativeFileSplit(filename, "\n")
+	inputs, err := util.ParseRelativeFileSplit(filename, "\n\n")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	sum := 0
-	i := 0
-	for _, expression := range inputs {
-		tokens := parseString(expression)
-		tree, _ := parseTokens(tokens)
-		res := tree.Evaluate()
-		sum += res
+	// get the rules
 
-		numstr := strconv.Itoa(res)
-
-		expCell := tview.NewTableCell(expression)
-		numCell := tview.NewTableCell(numstr)
-		table.SetCell(i, 0, expCell)
-		table.SetCell(i, 1, numCell)
-
-		i++
+	ruleBlock := inputs[0]
+	ruleLookup := map[int]interface{}{}
+	rules := strings.Split(ruleBlock, "\n")
+	for _, r := range rules {
+		index, value, err := parseRules(r)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		ruleLookup[index] = value
 	}
 
-	sumstr := strconv.Itoa(sum)
-	sumLabelCell := tview.NewTableCell("Sum")
-	sumCell := tview.NewTableCell(sumstr)
-	table.SetCell(i, 0, sumLabelCell)
-	table.SetCell(i, 1, sumCell)
-	if err := app.SetRoot(table, true).SetFocus(table).Run(); err != nil {
-		panic(err)
+	// construct a lookup table, where we check against
+	// previous keys until we return strings
+
+	lookup := map[int]func() []string{}
+	for k, v := range ruleLookup {
+		switch v.(type) {
+		case [][]int:
+			values := v.([][]int)
+			lookup[k] = func() []string {
+				allStrings := []string{}
+				for _, indices := range values {
+					res := [][]string{}
+					for _, i := range indices {
+						res = append(res, lookup[i]())
+					}
+					allStrings = append(allStrings, zip(res...)...)
+				}
+				return allStrings
+			}
+		case string:
+			value := v.(string)
+			lookup[k] = func() []string {
+				return []string{value}
+			}
+		}
 	}
+
+	fmt.Println(lookup[0]())
+	// construct a final lookup table of all the values
+	// that result from key 0
+
+	zeroVals := map[string]bool{}
+	for _, val := range lookup[0]() {
+		zeroVals[val] = true
+	}
+
+	// parse all of the outputs
+
+	outputBlock := inputs[1]
+	outputVals := strings.Split(outputBlock, "\n")
+	count := 0
+	for _, val := range outputVals {
+		if zeroVals[val] {
+			count += 1
+		}
+	}
+
+	// display the count
+
+	fmt.Println(count)
 }
